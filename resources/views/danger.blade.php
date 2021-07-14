@@ -44,13 +44,13 @@
                     <tr>
                         <td class="flag_icon"><img src="{{ asset('img/sample_w.png')}}"></td>
                         <td>{{$data->place}}</td>
-                        <td>{{$data->rain_hour}}</td>
+                        <td>{{$data->rain_hour}}mm</td>
                         <td>-</td>
-                        <td>{{$data->rain_sum}}</td>
-                        <td>{{$data->tmp}}</td>
+                        <td>{{$data->rain_sum}}mm</td>
+                        <td>{{$data->tmp}}℃</td>
                         <td>{{$data->direction}}</td>
-                        <td>{{$data->wind}}</td>
-                        <td></td>
+                        <td>{{$data->wind}}m</td>
+                        <td>-</td>
                         <td>指示なし</td>
                         @if ($data->rain_sum > 0)
                             <td><button>送信</button></td>
@@ -59,6 +59,20 @@
                         @endif
                     </tr>
                 @endforeach
+                {{-- sample --}}
+                <tr>
+                    <td class="flag_icon"><img src="{{ asset('img/sample_y.png')}}"></td>
+                    <td>Sample</td>
+                    <td style="color: yellow">65mm</td>
+                    <td>-</td>
+                    <td>68mm</td>
+                    <td>25.7℃</td>
+                    <td>西</td>
+                    <td>1.2m</td>
+                    <td>-</td>
+                    <td style="color: yellow">避難準備</td>
+                    <td><button class="btn-danger">送信</button></td>
+                </tr>
             </tbody>
         </table>
     </div>
