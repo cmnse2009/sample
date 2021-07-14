@@ -92,6 +92,7 @@ class HQ_MainController extends Controller
             $newdata = Lpwa::where('host',$data->host)->orderBy('id','DESC')->first();
             $newrain = $newdata->rain;
             $rain_sum = 0;
+            Log::debug(count($lists));
             if(count($lists)>0){
                 foreach($lists as $value){
                     if($newrain !== $value->rain){
@@ -101,74 +102,77 @@ class HQ_MainController extends Controller
                     }
                 }
                 $data['rain_sum'] = $rain_sum;
-                // 1時間雨量
-                $list = Lpwa::where('host',$data->host)->whereRaw('created_at > "'.date($newdata->created_at).'" - INTERVAL 10 MINUTE')->orderBy('created_at','ASC')->limit(1)->get();
-                $newrain = $newdata->rain;
-                $rain_hour = 0;
-                $list = $list[0];
-                $oldtime = strtotime($value->created_at);
-                if($newrain !== $value->rain){
-                    $rain_val = $newrain - $value->rain;
-                    $newrain = $value->rain;
-                    $rain_hour += $rain_val;
-                }
-
-                // Log::debug($list);
-                if($rain_hour>0){
-                    // 雨量計算
-                    $newtime = strtotime($newdata->created_at);
-                    //タイムスタンプの差を計算
-                    $difSeconds = $newtime - $oldtime;
-                    //分の差を取得
-                    $difMinutes = ($difSeconds - ($difSeconds / 60)) / 60;
-                    //時の差を取得
-                    $difHours = ($difMinutes - ($difMinutes / 60)) / 60;
-                    // １時間雨量
-                    $fall = $rain_hour / $difHours;
-                }
-                $data['rain_hour'] = $rain_hour;
-                $dir = $data->dir;
-                if($dir>=0 && $dir<11.251){
-                    $direction = '北';
-                }elseif($dir>=11.251 && $dir<33.751){
-                    $direction = '北北東';
-                }elseif($dir>=33.751 && $dir<56.251){
-                    $direction = '北東';
-                }elseif($dir>=56.251 && $dir<78.751){
-                    $direction = '東北東';
-                }elseif($dir>=78.751 && $dir<101.251){
-                    $direction = '東';
-                }elseif($dir>=101.251 && $dir<123.751){
-                    $direction = '東南東';
-                }elseif($dir>=123.751 && $dir<146.251){
-                    $direction = '南東';
-                }elseif($dir>=146.251 && $dir<168.751){
-                    $direction = '南南東';
-                }elseif($dir>=168.751 && $dir<191.251){
-                    $direction = '南';
-                }elseif($dir>=191.251 && $dir<213.751){
-                    $direction = '南南西';
-                }elseif($dir>=213.751 && $dir<236.251){
-                    $direction = '南西';
-                }elseif($dir>=236.251 && $dir<258.751){
-                    $direction = '西南西';
-                }elseif($dir>=258.751 && $dir<281.251){
-                    $direction = '西';
-                }elseif($dir>=281.251 && $dir<303.751){
-                    $direction = '西北西';
-                }elseif($dir>=303.751 && $dir<326.251){
-                    $direction = '北西';
-                }elseif($dir>=326.251 && $dir<348.751){
-                    $direction = '西北西';
-                }elseif($dir>=348.751 && $dir<359.999){
-                    $direction = '北西';
-                }else{
-                    $direction = null;
-                }
-                $data['direction'] = $direction;
             }
+            // 1時間雨量
+            $list = Lpwa::where('host',$data->host)->whereRaw('created_at > "'.date($newdata->created_at).'" - INTERVAL 10 MINUTE')->orderBy('created_at','ASC')->limit(1)->get();
+            $newrain = $newdata->rain;
+            $rain_hour = 0;
+            $list = $list[0];
+            $oldtime = strtotime($list->created_at);
+            if($newrain !== $list->rain){
+                $rain_val = $newrain - $list->rain;
+                $rain_hour += $rain_val;
+            }
+
+            Log::debug($list);
+            $fall=0;
+            if($rain_hour>0){
+                // 雨量計算
+                $newtime = strtotime($newdata->created_at);
+                //タイムスタンプの差を計算
+                $difSeconds = $newtime - $oldtime;
+                //分の差を取得
+                $difMinutes = ($difSeconds - ($difSeconds / 60)) / 60;
+                //時の差を取得
+                $difHours = ($difMinutes - ($difMinutes / 60)) / 60;
+                // １時間雨量
+                $fall = $rain_hour / $difHours;
+                // Log::debug($fall);
+                // Log::debug($difMinutes);
+                // Log::debug($rain_hour);
+            }
+            $data['rain_hour'] = $fall;
+            $dir = $data->dir;
+            if($dir>=0 && $dir<11.251){
+                $direction = '北';
+            }elseif($dir>=11.251 && $dir<33.751){
+                $direction = '北北東';
+            }elseif($dir>=33.751 && $dir<56.251){
+                $direction = '北東';
+            }elseif($dir>=56.251 && $dir<78.751){
+                $direction = '東北東';
+            }elseif($dir>=78.751 && $dir<101.251){
+                $direction = '東';
+            }elseif($dir>=101.251 && $dir<123.751){
+                $direction = '東南東';
+            }elseif($dir>=123.751 && $dir<146.251){
+                $direction = '南東';
+            }elseif($dir>=146.251 && $dir<168.751){
+                $direction = '南南東';
+            }elseif($dir>=168.751 && $dir<191.251){
+                $direction = '南';
+            }elseif($dir>=191.251 && $dir<213.751){
+                $direction = '南南西';
+            }elseif($dir>=213.751 && $dir<236.251){
+                $direction = '南西';
+            }elseif($dir>=236.251 && $dir<258.751){
+                $direction = '西南西';
+            }elseif($dir>=258.751 && $dir<281.251){
+                $direction = '西';
+            }elseif($dir>=281.251 && $dir<303.751){
+                $direction = '西北西';
+            }elseif($dir>=303.751 && $dir<326.251){
+                $direction = '北西';
+            }elseif($dir>=326.251 && $dir<348.751){
+                $direction = '西北西';
+            }elseif($dir>=348.751 && $dir<359.999){
+                $direction = '北西';
+            }else{
+                $direction = null;
+            }
+            $data['direction'] = $direction;
         }
-        Log::debug($datas);
+        // Log::debug($datas);
         return view('danger',['datas'=>$datas]);
     }
     public function setting_place(){

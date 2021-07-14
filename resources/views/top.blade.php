@@ -44,7 +44,7 @@
         $("td .icon-js").each(function (i) {
             var angle = $(this).children('img').data('angle');
             console.log(angle);
-            $(this).children('img').css('transform',`rotate(-${angle}deg)`)
+            $(this).children('img').css('transform',`rotate(${angle}deg)`)
         });
     })
 </script>

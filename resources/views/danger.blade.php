@@ -44,16 +44,16 @@
                     <tr>
                         <td class="flag_icon"><img src="{{ asset('img/sample_w.png')}}"></td>
                         <td>{{$data->place}}</td>
-                        <td>{{$data->rain_hour}}mm</td>
+                        <td>{{round($data->rain_hour,1)}}mm</td>
                         <td>-</td>
-                        <td>{{$data->rain_sum}}mm</td>
+                        <td>{{round( $data->rain_sum,1)}}mm</td>
                         <td>{{$data->tmp}}℃</td>
                         <td>{{$data->direction}}</td>
                         <td>{{$data->wind}}m</td>
                         <td>-</td>
                         <td>指示なし</td>
-                        @if ($data->rain_sum > 0)
-                            <td><button>送信</button></td>
+                        @if ($data->rain_hour > 0)
+                            <td><button class="btn-danger">送信</button></td>
                         @else
                             <td></td>
                         @endif
