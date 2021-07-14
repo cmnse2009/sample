@@ -137,7 +137,6 @@ $arr=[];
 $list = data_get($arr_data,$arr);
 // 日時,hostの取得
 $newlist = data_update_time_host($arr_data,$list);
-print_r($newlist);
 // mysqlに保存
 echo rdb_store($newlist);
 
