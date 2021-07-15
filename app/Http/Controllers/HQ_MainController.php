@@ -17,64 +17,7 @@ class HQ_MainController extends Controller
     //     $this->middleware('auth');
     // }
     // 通常画面
-    public function normal_display(){
-        $place_list = Place_list::orderBy('created_at','DESC')->first();
-        $p_list = json_decode($place_list->plist,true);
-        if($p_list){
-            foreach($p_list as $key => $value){
-                $data[] = Lpwa::orderBy('created_at','DESC')->where('host',$value)->first();
-            }
-            // return response()->json($contents);
-        }
-        foreach($data as $value){
-            $place = Place::where('lpwa_id',$value['host'])->first();
-            $value['place'] = $place->place_name;
-            $dir = $value['dir'];
-
-            if($dir>=0 && $dir<11.251){
-                $direction = '北';
-            }elseif($dir>=11.251 && $dir<33.751){
-                $direction = '北北東';
-            }elseif($dir>=33.751 && $dir<56.251){
-                $direction = '北東';
-            }elseif($dir>=56.251 && $dir<78.751){
-                $direction = '東北東';
-            }elseif($dir>=78.751 && $dir<101.251){
-                $direction = '東';
-            }elseif($dir>=101.251 && $dir<123.751){
-                $direction = '東南東';
-            }elseif($dir>=123.751 && $dir<146.251){
-                $direction = '南東';
-            }elseif($dir>=146.251 && $dir<168.751){
-                $direction = '南南東';
-            }elseif($dir>=168.751 && $dir<191.251){
-                $direction = '南';
-            }elseif($dir>=191.251 && $dir<213.751){
-                $direction = '南南西';
-            }elseif($dir>=213.751 && $dir<236.251){
-                $direction = '南西';
-            }elseif($dir>=236.251 && $dir<258.751){
-                $direction = '西南西';
-            }elseif($dir>=258.751 && $dir<281.251){
-                $direction = '西';
-            }elseif($dir>=281.251 && $dir<303.751){
-                $direction = '西北西';
-            }elseif($dir>=303.751 && $dir<326.251){
-                $direction = '北西';
-            }elseif($dir>=326.251 && $dir<348.751){
-                $direction = '西北西';
-            }elseif($dir>=348.751 && $dir<359.999){
-                $direction = '北西';
-            }else{
-                $direction = null;
-            }
-            $value['direction'] = $direction;
-        }
-
-        return view('top',['datas'=>$data]);
-    }
-    // 警告画面
-    public function rain_cal(){
+    public function top_display(){
         $place_list = Place_list::orderBy('created_at','DESC')->first();
         $p_list = json_decode($place_list->plist,true);
         if($p_list){
@@ -92,7 +35,7 @@ class HQ_MainController extends Controller
             $newdata = Lpwa::where('host',$data->host)->orderBy('id','DESC')->first();
             $newrain = $newdata->rain;
             $rain_sum = 0;
-            Log::debug(count($lists));
+            // Log::debug(count($lists));
             if(count($lists)>0){
                 foreach($lists as $value){
                     if($newrain !== $value->rain){
@@ -103,7 +46,7 @@ class HQ_MainController extends Controller
                 }
                 $data['rain_sum'] = $rain_sum;
             }
-            // 1時間雨量
+            // 瞬間雨量
             $list = Lpwa::where('host',$data->host)->whereRaw('created_at > "'.date($newdata->created_at).'" - INTERVAL 10 MINUTE')->orderBy('created_at','ASC')->limit(1)->get();
             $newrain = $newdata->rain;
             $rain_hour = 0;
@@ -113,9 +56,7 @@ class HQ_MainController extends Controller
                 $rain_val = $newrain - $list->rain;
                 $rain_hour += $rain_val;
             }
-
-            Log::debug($list);
-            $fall=0;
+            $fall=0; //1時間雨量
             if($rain_hour>0){
                 // 雨量計算
                 $newtime = strtotime($newdata->created_at);
@@ -127,9 +68,6 @@ class HQ_MainController extends Controller
                 $difHours = ($difMinutes - ($difMinutes / 60)) / 60;
                 // １時間雨量
                 $fall = $rain_hour / $difHours;
-                // Log::debug($fall);
-                // Log::debug($difMinutes);
-                // Log::debug($rain_hour);
             }
             $data['rain_hour'] = $fall;
             $dir = $data->dir;
@@ -173,7 +111,7 @@ class HQ_MainController extends Controller
             $data['direction'] = $direction;
         }
         // Log::debug($datas);
-        return view('danger',['datas'=>$datas]);
+        return view('top',['datas'=>$datas]);
     }
     public function setting_place(){
         return view('set_place');
@@ -202,8 +140,8 @@ class HQ_MainController extends Controller
             'p_list' => 'required|max:255',
         ]);
         if($validator->fails()){
-            return response()->json($validator->errors(), 422);
             Log::debug($validator);
+            return response()->json($validator->errors(), 422);
         }
         try{
             DB::beginTransaction();
@@ -211,6 +149,37 @@ class HQ_MainController extends Controller
             $place_list->list_name = $list_name;
             $place_list->plist = $plist;
             $place_list->save();
+            DB::commit();
+            return response()->json(true);
+        }catch(Exception $e){
+            DB::rollback();
+            Log::debug($e);
+            return response()->json($e);
+        }
+    }
+
+    public function add_place(){
+        return view('add_place');
+    }
+    public function store_place(Request $request){
+        Log::debug($request);
+        $validator = Validator::make($request->all(),[
+            'lpwa_id' => 'required|max:255',
+            'place_name' => 'required|max:255',
+        ]);
+        if($validator->fails()){
+            Log::debug($validator);
+            return response()->json($validator->errors(), 422);
+        }
+        try{
+            DB::beginTransaction();
+            $place = new Place;
+            $place->lpwa_id = $request->lpwa_id;
+            $place->address = $request->address;
+            $place->place_name = $request->place_name;
+            $place->max_rain_hour = $request->max_rain_hour;
+            $place->max_rain_sum = $request->max_rain_sum;
+            $place->save();
             DB::commit();
             return response()->json(true);
         }catch(Exception $e){

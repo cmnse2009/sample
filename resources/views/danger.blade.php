@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @section('content')
     <style>
-        th,td{
+        .danger-table th,td{
             /* border: solid 2px; */
             height: 50px;
         }

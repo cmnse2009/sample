@@ -12,11 +12,15 @@
 */
 
 
-Route::get('/normal','HQ_MainController@normal_display');
+Route::get('/top','HQ_MainController@top_display');
+
 Route::get('/set/place','HQ_MainController@setting_place');
 Route::post('/get/place','HQ_MainController@get_place');
 Route::post('/store/placelist','HQ_MainController@store_placelist');
-Route::get('/danger','HQ_MainController@rain_cal');
+
+Route::get('/add/place','HQ_MainController@add_place');
+Route::post('/store/place','HQ_MainController@store_place');
+
 
 Auth::routes();
 

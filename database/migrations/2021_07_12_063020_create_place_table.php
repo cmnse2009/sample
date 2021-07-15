@@ -16,7 +16,10 @@ class CreatePlaceTable extends Migration
         Schema::create('place', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('lpwa_id');
+            $table->string('address')->nullable();
             $table->string('place_name');
+            $table->string('max_rain_hour')->nullable();
+            $table->string('max_rain_sum')->nullable();
             $table->timestamps();
         });
     }

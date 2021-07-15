@@ -3,13 +3,14 @@ body {
     box-sizing:border-box;
     width: 100%;
     height:100vh;
-    background-image: url(./../img/map.jpg);
-    background-position: center center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    background-size: cover;
+}
+    .normal{
+        background-image: url(./../img/map.jpg);
+        background-position: center center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        background-size: cover;
    }
-
    .wrapper{
        width: 100%;
        height: 100%;
@@ -42,8 +43,8 @@ body {
        width: 100%;
     }
 
-   .lpwa_data_table{background-color: #fff; width: 100%}
-   .lpwa_data_table th,td{border: solid 1px;text-align-last:center;}
+   .lpwa_data_table{background-color: #fff; width: 100%;text-align: center;}
+   .lpwa_data_table th,.lpwa_data_table td{border: solid 1px;text-align-last:center;}
    .lpwa_data_table th{background-color: #ecd967;}
    .lpwa_data_table tbody td span{font-size: x-large;}
    .lpwa_data_table tbody td img{width: 20px;-webkit-transform-origin-y: 12px;}
