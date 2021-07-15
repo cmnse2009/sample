@@ -46,7 +46,7 @@ body {
    .lpwa_data_table th,td{border: solid 1px;text-align-last:center;}
    .lpwa_data_table th{background-color: #ecd967;}
    .lpwa_data_table tbody td span{font-size: x-large;}
-   .lpwa_data_table tbody td img{width: 20px;}
+   .lpwa_data_table tbody td img{width: 20px;-webkit-transform-origin-y: 12px;}
 
    .image{
         display:flex;
