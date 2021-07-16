@@ -189,6 +189,7 @@
                     }
                 })
                 if($('#status').val()==0){
+                    $('#normal').css('display','flex')
                     $('#danger').css('display','none');
                 }else{
                     $('#normal').css('display','none');
