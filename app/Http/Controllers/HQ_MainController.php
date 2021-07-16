@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use App\Lpwa;
 use App\Place;
 use App\Place_list;
+use Exception;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
@@ -16,26 +17,48 @@ class HQ_MainController extends Controller
     // {
     //     $this->middleware('auth');
     // }
-    // 通常画面
     public function top_display(){
         $place_list = Place_list::orderBy('created_at','DESC')->first();
-        $p_list = json_decode($place_list->plist,true);
-        if($p_list){
-            foreach($p_list as $key => $value){
-                $datas[] = Lpwa::orderBy('created_at','DESC')->where('host',$value)->first();
+        return view('top',['list_num'=>$place_list->id]);
+    }
+    public function rain_judge(Request $request){
+        $id = $request->list_num;
+        try{
+            $place_list = Place_list::where('id',$id)->orderBy('created_at','DESC')->first();
+            $p_list = json_decode($place_list->plist,true);
+            if($p_list){
+                foreach($p_list as $key => $value){
+                    $datas[] = Lpwa::orderBy('created_at','DESC')->where('host',$value)->first();
+                }
             }
-            // return response()->json($contents);
+            // data取得メソッドの呼び出し
+            $datas = $this->get_data($datas);
+            $flag = 0;
+            foreach($datas as $data){
+                if($data->danger_flag !== 0){
+                    $flag = 1;
+                }
+            }
+
+            return response()->json(['flag' => $flag, 'data' => $datas]);
+        }catch(Exception $e){
+            Log::debug($e);
+            return response()->json($e, 422);
         }
+    }
+    // data取得（地域名、累加雨量、1時間雨量、方角）
+    function get_data($datas){
         foreach($datas as $data){
             // 観測場所
             $place = Place::where('lpwa_id',$data->host)->first();
             $data['place'] = $place->place_name;
+
+            $data['danger_flag'] = 0;
             // 累加雨量
             $lists = Lpwa::where('host',$data->host)->whereRaw('created_at > NOW() - INTERVAL 6 HOUR')->orderBy('created_at','DESC')->get();
             $newdata = Lpwa::where('host',$data->host)->orderBy('id','DESC')->first();
             $newrain = $newdata->rain;
             $rain_sum = 0;
-            // Log::debug(count($lists));
             if(count($lists)>0){
                 foreach($lists as $value){
                     if($newrain !== $value->rain){
@@ -44,14 +67,16 @@ class HQ_MainController extends Controller
                         $rain_sum += $rain_val;
                     }
                 }
-                $data['rain_sum'] = $rain_sum;
+                if($place->max_rain_sum <= $rain_sum){
+                    $data['danger_flag'] = 1;
+                }
             }
+            $data['rain_sum'] = $rain_sum;
             // 瞬間雨量
             $list = Lpwa::where('host',$data->host)->whereRaw('created_at > "'.date($newdata->created_at).'" - INTERVAL 10 MINUTE')->orderBy('created_at','ASC')->limit(1)->get();
+            $list = $list[0];
             $newrain = $newdata->rain;
             $rain_hour = 0;
-            $list = $list[0];
-            $oldtime = strtotime($list->created_at);
             if($newrain !== $list->rain){
                 $rain_val = $newrain - $list->rain;
                 $rain_hour += $rain_val;
@@ -59,6 +84,7 @@ class HQ_MainController extends Controller
             $fall=0; //1時間雨量
             if($rain_hour>0){
                 // 雨量計算
+                $oldtime = strtotime($list->created_at);
                 $newtime = strtotime($newdata->created_at);
                 //タイムスタンプの差を計算
                 $difSeconds = $newtime - $oldtime;
@@ -68,6 +94,9 @@ class HQ_MainController extends Controller
                 $difHours = ($difMinutes - ($difMinutes / 60)) / 60;
                 // １時間雨量
                 $fall = $rain_hour / $difHours;
+            }
+            if($place->max_rain_hour <= $fall){
+                $data['danger_flag'] = 1;
             }
             $data['rain_hour'] = $fall;
             $dir = $data->dir;
@@ -110,8 +139,7 @@ class HQ_MainController extends Controller
             }
             $data['direction'] = $direction;
         }
-        // Log::debug($datas);
-        return view('top',['datas'=>$datas]);
+        return $datas;
     }
     public function setting_place(){
         return view('set_place');

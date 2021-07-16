@@ -20,6 +20,7 @@ Route::post('/store/placelist','HQ_MainController@store_placelist');
 
 Route::get('/add/place','HQ_MainController@add_place');
 Route::post('/store/place','HQ_MainController@store_place');
+Route::post('/get/judge','HQ_MainController@rain_judge');
 
 
 Auth::routes();

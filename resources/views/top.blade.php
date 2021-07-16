@@ -3,6 +3,8 @@
 <head>
     <meta charset="utf-8">
     <title>平常時画面</title>
+    <!-- CSRF Token -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="stylesheet" href="css/normal.css">
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
@@ -34,6 +36,7 @@
 </style>
 
 <body>
+    <div></div>
     <div class="wrapper normal" id="normal">
         <div class="left-box">
             <img class="left-image" src="img/road1.png" alt="">
@@ -44,7 +47,6 @@
 
         <div class="right-box">
             <table class="lpwa_data_table">
-                @foreach ($datas as $data)
                 <thead>
                     <tr>
                         <th>観測地点</th>
@@ -55,8 +57,8 @@
                         <th>瞬間風速</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <tr class="lpwa_data{{$data->id}}">
+                <tbody id="normal_data_js">
+                    {{-- <tr class="lpwa_data{{$data->id}}">
                         <td>{{$data->place}}</td>
                         <td><span>{{$data->tmp}}</span>℃</td>
                         <td><span>{{$data->hm}}</span>％</td>
@@ -70,12 +72,9 @@
                         </td>
                         <td><span>{{$data->wind}}</span>ｍ</td>
                         <td><span>{{$data->gust}}</span>ｍ</td>
-                    </tr>
+                    </tr> --}}
                 </tbody>
-                @endforeach
             </table>
-
-
             <div class="image">
                 <img class="right-image" src="img/rain1.png" alt="">
                 <img class="right-image" src="img/rain2.png" alt="">
@@ -99,28 +98,9 @@
                     <th>操作</th>
                 </tr>
             </thead>
-            <tbody>
-                @foreach ($datas as $data)
-                    <tr>
-                        <td class="flag_icon"><img src="{{ asset('img/sample_w.png')}}"></td>
-                        <td>{{$data->place}}</td>
-                        <td id="rain_hour-{{$data->id}}">{{round($data->rain_hour,1)}}mm</td>
-                        <td>-</td>
-                        <td id="rain_sum-{{$data->id}}">{{round( $data->rain_sum,1)}}mm</td>
-                        <td>{{$data->tmp}}℃</td>
-                        <td>{{$data->direction}}</td>
-                        <td>{{$data->wind}}m</td>
-                        <td>-</td>
-                        <td>指示なし</td>
-                        @if ($data->rain_hour > 0)
-                            <td><button class="btn-danger">送信</button></td>
-                        @else
-                            <td></td>
-                        @endif
-                    </tr>
-                @endforeach
+            <tbody id="danger_data_js">
                 {{-- sample --}}
-                <tr>
+                {{-- <tr>
                     <td class="flag_icon"><img src="{{ asset('img/sample_y.png')}}"></td>
                     <td>Sample</td>
                     <td style="color: yellow">65mm</td>
@@ -132,26 +112,92 @@
                     <td>-</td>
                     <td style="color: yellow">避難準備</td>
                     <td><button class="btn-danger">送信</button></td>
-                </tr>
+                </tr> --}}
             </tbody>
         </table>
     </div>
-    <div><input type="hidden" id="status" value="0" /></div>
+    <div>
+        <input type="hidden" id="list_num" value="{{$list_num}}" />
+        <input type="hidden" id="status" value="0" />
+    </div>
     <script>
+        // URL読み込み時の初期テーブル
         $(function(){
+            rain_judge();
+        });
+        // 5秒ごとに更新
+        setInterval(function(){
+            // ここに処理
+            rain_judge();
+        }, 5000);
+        // 方角矢印の向き
+        function angle_change() {
             $("td .icon-js").each(function (i) {
                 var angle = $(this).children('img').data('angle');
-                console.log(angle);
                 $(this).children('img').css('transform',`rotate(${angle}deg)`)
             });
-            if($('#status').val()==0){
-                $('#danger').css('display','none');
-            }else{
-                $('#normal').css('display','none');
-                $('#danger').css('display','block');
-            }
-        });
+        }
+        // 画面の切り替え、閾値の判定
         function rain_judge(){
+            list_num = $("#list_num").val();
+            $.ajax({
+            type     : "POST",
+            url      : "/get/judge",
+            data     : {"list_num" : list_num},
+            dataType : "json",
+            headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+            })
+            .done(function(responce_data){
+                $('#status').val(responce_data.flag);
+                $("#normal_data_js").empty();
+                $("#danger_data_js").empty();
+                $.each(responce_data.data , function(index, element){
+                    if(responce_data.flag==0){
+                        var tags  = `<tr>`;
+                            tags += `<td>${element.place}</td>`;
+                            tags += `<td><span>${element.tmp}</span>℃</td>`;
+                            tags += `<td><span>${element.hm}</span>％</td>`;
+                            tags += `<td><div class="icon-js"><img src="{{ asset('img/dir_icon.svg') }}" data-angle="${element.dir}"></div><div>${element.direction}</div></td>`;
+                            tags += `<td><span>${element.wind}</span>ｍ</td>`;
+                            tags += `<td><span>${element.gust}</span>ｍ</td>`;
+                            tags += `<tr>`;
+
+                        $("#normal_data_js").append(tags);
+                        angle_change();
+
+                    }else{
+                        var tags  = `<tr>`;
+                            tags += `<td class="flag_icon"><img src="{{ asset('img/sample_w.png')}}"></td>`;
+                            tags += `<td>${element.place}</td>`;
+                            tags += `<td><span>${Math.round(element.rain_hour*10)/10}</span>mm</td>`;
+                            tags += `<td>-</td>`;
+                            tags += `<td>${Math.round(element.rain_sum*10)/10}mm</td>`;
+                            tags += `<td><span>${element.tmp}</span>℃</td>`;
+                            tags += `<td>${element.direction}</td>`;
+                            tags += `<td><span>${element.wind}</span>ｍ</td>`;
+                            tags += `<td>-</td>`;
+                            tags += `<td>指示なし</td>`;
+                            if(element.danger_flag==0){
+                            tags += `<td></td>`;
+                            }else{
+                            tags += `<td><button class="btn-danger">送信</button></td>`;
+                            }
+                            tags += `</tr>`;
+                        $("#danger_data_js").append(tags);
+                    }
+                })
+                if($('#status').val()==0){
+                    $('#danger').css('display','none');
+                }else{
+                    $('#normal').css('display','none');
+                    $('#danger').css('display','block');
+                }
+            }).fail(function(XMLHttpRequest, status, e){
+                alert(e);
+        });
+
         }
     </script>
 </body>

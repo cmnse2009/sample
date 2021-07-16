@@ -27,6 +27,7 @@ function influxDB_read(){
     }
     if(count($tables) == 0){
         return false;
+        exit;
     }
     foreach($tables as $table){
         $list[] = $table->records;
