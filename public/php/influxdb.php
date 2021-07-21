@@ -8,19 +8,22 @@ use InfluxDB2\Client;
 
 
 function influxDB_read(){
+    // configファイルを変数に代入
+    $config = include(__DIR__ . '/config.php');
     # You can generate a Token from the "Tokens Tab" in the UI
-    $token = '_J92h3T0VH7oi0twktWRdfByNM7i8t9wNFm3QJZPf11oE6CEy1ipBngf-QOIpwwnNBaLnbu_Mu1i8ced0MPF3g==';
-    $org = 'cmn';
-    $bucket = 'igss';
+    $token = $config['token'];
+    $org = $config['org'];
+    $bucket = $config['bucket'];
 
     $client = new Client([
-        "url" => "http://192.168.0.155:8086",
+        "url" => $config['url'],
         "token" => $token,
         // "verifySSL" => false,
         // "precision" => InfluxDB2\Model\WritePrecision::NS,
     ]);
     try{
-        $query = 'from(bucket: "igss") |> range(start: -24h) |> filter(fn: (r) => r["_measurement"] == "sensor")|>last()';
+        $query = 'from(bucket: "igss") |> range(start: -1d)|> filter(fn: (r) => r["_measurement"] == "sensor")|> last()';
+        // $query = 'SELECT * FROM "igss"';
         $tables = $client->createQueryApi()->query($query, $org);
     }catch(Exception $e){
         return $e;
@@ -49,24 +52,45 @@ function array_change($obj){
 	}
 	return $arr;
 }
+// // field valueの取得（[field]=>value の連想配列に変換）
+// function data_get($list,&$arr){
+//     if(is_array($list)){
+//         $head = '';
+//         $body = '';
+//         $host = '';
+//         foreach($list as $key => &$value){
+//             if(!is_array($value)){
+//                 if($key == '_field'){
+//                     $head = $value;
+//                 }elseif($key == '_value'){
+//                     $body = $value;
+//                 }
+//                 if($head !== '' && $body !== '' && $host !=='' ){
+//                     $arr[$host][$head] = $body;
+//                 }
+//             }else{
+//                 data_get($value,$arr);
+//             }
+//         }
+//         return $arr;
+//     }
+// }
 
-function data_get($list,&$arr){
+// field valueの取得（[field]=>value の連想配列に変換）
+function data_get($list){
     if(is_array($list)){
-        $head = '';
-        $body = '';
-        foreach($list as $key => &$value){
-            if(!is_array($value)){
-                if($key == '_field'){
-                    $head = $value;
-                }elseif($key == '_value'){
-                    $body = $value;
+        $host = '';
+        foreach($list as $values){
+            foreach($values as $value){
+                foreach($value as $val){
+                    if(!is_int($val)){
+                        if($host !== $val['host']){
+                            $host = $val['host'];
+                        }
+                        $arr[$host][$val['_field']] = $val['_value'];
+                        $arr[$host]['created_at'] = time_cal($val['_time']);
+                    }
                 }
-                if($head !== '' && $body !== ''){
-                    $arr[$head] = $body;
-
-                }
-            }else{
-                data_get($value,$arr);
             }
         }
         return $arr;
@@ -87,25 +111,25 @@ function time_cal($time){
     }
 }
 
-// 取り出し
-function data_update_time_host($data,&$list)
-{
-    if(is_array($list) && is_array($data)){
-        foreach($data as $key => &$value){
-            if(!is_array($value)){
-                if($key == '_stop'){
-                    $time = time_cal($value);
-                    $list['created_at'] = $time;
-                }elseif($key == 'host'){
-                    $list['host'] = $value;
-                }
-            }else{
-                data_update_time_host($value,$list);
-            }
-        }
-        return $list;
-    }
-}
+// // 取り出し
+// function data_update_time_host($data,&$list)
+// {
+//     if(is_array($list) && is_array($data)){
+//         foreach($data as $key => &$value){
+//             if(!is_array($value)){
+//                 if($key == '_time'){
+//                     $time = time_cal($value);
+//                     $list['created_at'] = $time;
+//                 }elseif($key == 'host'){
+//                     $list[$key]['created_at'] = $value;
+//                 }
+//             }else{
+//                 data_update_time_host($value,$list);
+//             }
+//         }
+//         return $list;
+//     }
+// }
 // mysqlに保存
 function rdb_store($array)
 {
@@ -115,13 +139,15 @@ function rdb_store($array)
     try{
         $dbh = new PDO($dsn, $user, $password);
         $dbh->beginTransaction();
-        $calum = "";
-        $val = "'";
-        foreach($array as $key =>$value){
-            $calum .= $key.",";
-            $val .= $value."','";
+        foreach($array as $hostkey => $value){
+            $calum = "host".",";
+            $val = "'".$hostkey."','";
+            foreach($value as $key =>$value){
+                $calum .= $key.",";
+                $val .= $value."','";
+            }
+            $dbh->exec("INSERT INTO lpwa (".substr($calum, 0, -1).") VALUES (".substr($val, 0, -2).");");
         }
-        $dbh->exec("INSERT INTO lpwa (".substr($calum, 0, -1).") VALUES (".substr($val, 0, -2).");");
         $dbh->commit();
         return true;
     }catch(PDOException $e){
@@ -132,14 +158,19 @@ function rdb_store($array)
 
 
 $data = influxDB_read();
+if($data==false){
+    echo 'No Data';
+    exit;
+}
 $arr_data = array_change($data);
+// print_r($arr_data);
 $arr=[];
 // field valueの取得
-$list = data_get($arr_data,$arr);
-// 日時,hostの取得
-$newlist = data_update_time_host($arr_data,$list);
+$list = data_get($arr_data);
+print_r($list);
+
 // mysqlに保存
-echo rdb_store($newlist);
+echo rdb_store($list);
 
 
 ?>
