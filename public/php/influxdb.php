@@ -22,7 +22,7 @@ function influxDB_read(){
         // "precision" => InfluxDB2\Model\WritePrecision::NS,
     ]);
     try{
-        $query = 'from(bucket: "igss") |> range(start: -1d)|> filter(fn: (r) => r["_measurement"] == "sensor")|> last()';
+        $query = 'from(bucket: "igss") |> range(start: -10m)|> filter(fn: (r) => r["_measurement"] == "sensor")|> last()';
         // $query = 'SELECT * FROM "igss"';
         $tables = $client->createQueryApi()->query($query, $org);
     }catch(Exception $e){
@@ -52,30 +52,24 @@ function array_change($obj){
 	}
 	return $arr;
 }
-// // field valueの取得（[field]=>value の連想配列に変換）
-// function data_get($list,&$arr){
+// field valueの取得（[field]=>value の連想配列に変換）
+// function datum_get($list,&$arr){
 //     if(is_array($list)){
 //         $head = '';
 //         $body = '';
 //         $host = '';
 //         foreach($list as $key => &$value){
 //             if(!is_array($value)){
-//                 if($key == '_field'){
-//                     $head = $value;
-//                 }elseif($key == '_value'){
-//                     $body = $value;
-//                 }
-//                 if($head !== '' && $body !== '' && $host !=='' ){
-//                     $arr[$host][$head] = $body;
-//                 }
+//                 print_r($key);
+//                 // exit;
+//                 if(isset($list['host'])){$arr[$list['host']][$list['_field']] = $list['_value'];}
 //             }else{
-//                 data_get($value,$arr);
+//                 datum_get($value,$arr);
 //             }
-//         }
 //         return $arr;
+//         }
 //     }
 // }
-
 // field valueの取得（[field]=>value の連想配列に変換）
 function data_get($list){
     if(is_array($list)){
@@ -130,6 +124,7 @@ function time_cal($time){
 //         return $list;
 //     }
 // }
+
 // mysqlに保存
 function rdb_store($array)
 {
@@ -163,14 +158,13 @@ if($data==false){
     exit;
 }
 $arr_data = array_change($data);
-// print_r($arr_data);
-$arr=[];
+print_r($arr_data);
 // field valueの取得
 $list = data_get($arr_data);
 print_r($list);
 
 // mysqlに保存
 echo rdb_store($list);
-
+exit;
 
 ?>

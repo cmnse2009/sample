@@ -33,10 +33,12 @@
     .flag_icon img{
         width: 15px;
     }
+    .yellow{
+        color: yellow;
+    }
 </style>
 
 <body>
-    <div></div>
     <div class="wrapper normal" id="normal">
         <div class="left-box">
             <img class="left-image" src="img/road1.png" alt="">
@@ -169,6 +171,7 @@
 
                     }else{
                         var tags  = `<tr>`;
+                            if(element.danger_flag==0){
                             tags += `<td class="flag_icon"><img src="{{ asset('img/sample_w.png')}}"></td>`;
                             tags += `<td>${element.place}</td>`;
                             tags += `<td><span>${Math.round(element.rain_hour*10)/10}</span>mm</td>`;
@@ -179,9 +182,18 @@
                             tags += `<td><span>${element.wind}</span>ｍ</td>`;
                             tags += `<td>-</td>`;
                             tags += `<td>指示なし</td>`;
-                            if(element.danger_flag==0){
                             tags += `<td></td>`;
                             }else{
+                            tags += `<td class="flag_icon"><img src="{{ asset('img/sample_y.png')}}"></td>`;
+                            tags += `<td>${element.place}</td>`;
+                            tags += `<td class="yellow"><span>${Math.round(element.rain_hour*10)/10}</span>mm</td>`;
+                            tags += `<td>-</td>`;
+                            tags += `<td class="yellow">${Math.round(element.rain_sum*10)/10}mm</td>`;
+                            tags += `<td><span>${element.tmp}</span>℃</td>`;
+                            tags += `<td>${element.direction}</td>`;
+                            tags += `<td><span>${element.wind}</span>ｍ</td>`;
+                            tags += `<td>-</td>`;
+                            tags += `<td class="yellow">避難準備</td>`;
                             tags += `<td><button class="btn-danger">送信</button></td>`;
                             }
                             tags += `</tr>`;
